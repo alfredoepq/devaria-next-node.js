@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { CadastroRequisicao } from "../../types/CadastroRequisicao";
 import { UsuarioModel } from "../../models/UsuarioModel";
 import conectarMongoDb from "@/middlewares/conectarMongoDb";
-
+import md5 from "md5";
 
 const cadastro = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
@@ -20,8 +20,21 @@ const cadastro = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(405).json({Erro: 'Senha inválida'});
     }
 
-      await UsuarioModel.create(usuario);
+    const usuariosComMesmoEmail = await UsuarioModel.find({email: usuario.email});
+
+    if (usuariosComMesmoEmail && usuariosComMesmoEmail.length > 0) {
+      return res.status(401).json({Erro: 'Já existe uma conta com o email inforamdo'});
+    }
+      const usuarioASerSalvo = {
+        nome: usuario.nome,
+        email: usuario.email,
+        senha: md5(usuario.senha)
+      }
+
+      await UsuarioModel.create(usuarioASerSalvo);
       return res.status(200).json({Erro: 'Usuário cadastrado com sucesso'});
+
+     
 
   }
   return res.status(405).json({Erro: 'Método inválido'});
